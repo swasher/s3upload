@@ -5,12 +5,13 @@ import boto3
 import threading
 import pyperclip
 import subprocess
+import winsound
 import ansicon
-import urllib
 from subprocess import Popen, CREATE_NEW_CONSOLE
 from dotenv import load_dotenv
 from botocore.exceptions import ClientError
 from botocore.client import Config
+from boto3.s3.transfer import TransferConfig
 
 
 class bcolors:
@@ -33,8 +34,6 @@ def upload_file(file_name, bucket, object_name=None):
     :return: True if file was uploaded, else False
     """
 
-    bucket = os.getenv('S3_Bucket')
-
     # If S3 object_name was not specified, use file_name
     if object_name is None:
         object_name = file_name
@@ -47,10 +46,16 @@ def upload_file(file_name, bucket, object_name=None):
     # Upload the file
     s3_client = boto3.client('s3', **credentials, config=Config(signature_version='s3v4'))
 
+    transfer_config = TransferConfig(multipart_threshold=1024 * 25,
+                                     max_concurrency=10,
+                                     multipart_chunksize=1024 * 25,
+                                     use_threads=True)
+
     try:
         print(file_name)
         response = s3_client.upload_file(file_name, bucket, object_name,
                                          ExtraArgs={'ACL': 'public-read'},
+                                         Config=transfer_config,
                                          Callback=ProgressPercentage(file_name)
                                          )
     except ClientError as e:
@@ -74,7 +79,6 @@ def upload_file(file_name, bucket, object_name=None):
     link = '%s/%s/%s' % (s3_client.meta.endpoint_url, bucket, object_name)
 
     print('\n' + bcolors.WARNING + 'File link:' + bcolors.ENDC)
-    # link = urllib.parse.quote(link)
     print(bcolors.WARNING + link + bcolors.ENDC)
 
     pyperclip.copy(link)
@@ -108,19 +112,12 @@ if __name__ == '__main__':
     ansicon.load()
 
     prog_start = Popen([sys.executable], shell=True, creationflags=CREATE_NEW_CONSOLE)
-    # prog_start = Popen('ansicon.exe python', shell=True, creationflags=CREATE_NEW_CONSOLE)
-
-    cmd = 'mode 120,20'
+    cmd = 'mode 110,15'
     os.system(cmd)
-
-    # Have fun with terminal codes
-    # print(u'\x1b[32m Green \x1b[m')
 
     # parse args
     arguments = sys.argv[1:]
-    count = len(arguments)
-    # UNCOMENT FOR CHECK ONE ARG!!!!
-    if count != 1:
+    if len(arguments) != 1:
         raise Exception('Must be only one argument')
 
     # file_large = 'files/test_large.pdf'
@@ -128,13 +125,16 @@ if __name__ == '__main__':
     # input_file = file_small
     input_file = sys.argv[1]
 
-    bucket = 'tipo-proof'
+    bucket = os.getenv('S3_Bucket')
     folder_name = os.getenv('folder')
     filename = os.path.basename(input_file)
-
     object_name = folder_name + '/' + filename
 
     upload_file(input_file, bucket, object_name)
+
+    frequency = 2500
+    duration = 2000
+    winsound.Beep(frequency, duration)
 
     input('Enter to exit from this launcher script...')
 
