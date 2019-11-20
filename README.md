@@ -3,7 +3,6 @@ S3 WINDOWS RIGHT CLICK UPLOAD
 How to use:
 - install python
 - create dir for program and put here a script (s3up.py)
-- 
 - run `pipenv install`
 - run explorer and go to `shell:sendto`
 - put here a cmd file (with appropriate path)
