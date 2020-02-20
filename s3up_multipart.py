@@ -1,19 +1,19 @@
 import sys
 import os
-import logging
+import re
 import boto3
 import threading
 import pyperclip
-import subprocess
 import winsound
 import ansicon
+import datetime
 from subprocess import Popen, CREATE_NEW_CONSOLE
 from dotenv import load_dotenv
 from botocore.exceptions import ClientError
 from botocore.client import Config
 from boto3.s3.transfer import TransferConfig
 
-
+# see https://github.com/tartley/colorama/blob/master/colorama/ansi.py
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -23,6 +23,35 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+    DIM = '\033[90m'
+
+
+def finish_signal():
+    frequency = 500
+    duration = 200
+    for i in range(2):
+        winsound.Beep(frequency+i*300, duration)
+
+
+def remove_forbidden_chars(filename):
+    """
+    TODO Important! Test filenames with dot (.) and double-dot (..)
+    Проверка на допустимые символы
+    https: // docs.aws.amazon.com / AmazonS3 / latest / dev / UsingMetadata.html
+
+    Acceptable:
+    0-9 a-z A-Z  ! - _ . * ' ( )
+
+    Require special handling:
+    &$@=;:+,? and space
+
+    Characters to Avoid:
+    \{}^%`[]«»<>~#|
+    """
+
+    replace_whitespace_with_hyphen = re.sub("\s", "-", filename)
+    only_acceptable_symbols = re.findall("[0-9a-zA-Z!_\-.*()']", replace_whitespace_with_hyphen)
+    return ''.join(only_acceptable_symbols)
 
 
 def upload_file(file_name, bucket, object_name=None):
@@ -52,14 +81,17 @@ def upload_file(file_name, bucket, object_name=None):
                                      use_threads=True)
 
     try:
-        print(file_name)
+        # print('aaa', file_name)
+        print(bcolors.WARNING + 'Start upload: ' + bcolors.ENDC + os.path.split(file_name)[1])
+        print(bcolors.WARNING + 'Renamed to:   ' + bcolors.ENDC + os.path.split(object_name)[1])
         response = s3_client.upload_file(file_name, bucket, object_name,
                                          ExtraArgs={'ACL': 'public-read'},
                                          Config=transfer_config,
                                          Callback=ProgressPercentage(file_name)
                                          )
     except ClientError as e:
-        logging.error(e)
+        print('Error!!!')
+        print(e)
         return False
 
     # https://stackoverflow.com/questions/33809592/upload-to-amazon-s3-using-boto3-and-return-public-url
@@ -78,11 +110,11 @@ def upload_file(file_name, bucket, object_name=None):
     # generate link 3
     link = '%s/%s/%s' % (s3_client.meta.endpoint_url, bucket, object_name)
 
-    print('\n' + bcolors.WARNING + 'File link:' + bcolors.ENDC)
-    print(bcolors.WARNING + link + bcolors.ENDC)
+    print('\n' + bcolors.WARNING + 'File link:    ' + link + bcolors.ENDC)
 
     pyperclip.copy(link)
     spam = pyperclip.paste()
+    print('\n' + bcolors.OKGREEN + 'Ссылка скопирована в буфер обмена.')
 
     return True
 
@@ -101,13 +133,13 @@ class ProgressPercentage(object):
             self._seen_so_far += bytes_amount
             percentage = (self._seen_so_far / self._size) * 100
             sys.stdout.write(
-                "\r%s  %s / %s  (%.2f%%)" % (
-                    os.path.basename(self._filename), self._seen_so_far, self._size, percentage))
+                "\r%s %.2f%% %s(%s из %s байт)%s " % (
+                    # os.path.basename(self._filename), self._seen_so_far, self._size, percentage))
+                    bcolors.WARNING + 'Progress:    ' + bcolors.ENDC, percentage, bcolors.DIM, self._seen_so_far, self._size, bcolors.ENDC))
             sys.stdout.flush()
 
 
 if __name__ == '__main__':
-
     load_dotenv()
     ansicon.load()
 
@@ -127,20 +159,23 @@ if __name__ == '__main__':
 
     bucket = os.getenv('S3_Bucket')
     folder_name = os.getenv('folder')
+
     filename = os.path.basename(input_file)
-    object_name = folder_name + '/' + filename
+    filename = remove_forbidden_chars(filename)
+    now = datetime.datetime.now()
+    unique = '_' + now.strftime("%Y-%m-%d_%H.%M.%S")
+    body, extention = os.path.splitext(filename)
+    object_name = folder_name + '/' + filename + unique + extention
 
     upload_file(input_file, bucket, object_name)
 
-    frequency = 2500
-    duration = 2000
-    winsound.Beep(frequency, duration)
+    finish_signal()
 
-    input('Enter to exit from this launcher script...')
+    input(bcolors.DIM + 'Enter to exit from this launcher script...' + bcolors.ENDC)
 
     # Unload ansicon
     ansicon.unload()
 
     # this will kill the invoked terminal
     pidvalue = prog_start.pid
-    subprocess.Popen('taskkill /F /T /PID %i' % pidvalue)
+    # subprocess.Popen('taskkill /F /T /PID %i' % pidvalue)
