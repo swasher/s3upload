@@ -50,7 +50,7 @@ def remove_forbidden_chars(filename):
     """
 
     replace_whitespace_with_hyphen = re.sub("\s", "-", filename)
-    only_acceptable_symbols = re.findall("[0-9a-zA-Z!_\-.*()']", replace_whitespace_with_hyphen)
+    only_acceptable_symbols = re.findall("[0-9a-zA-Zа-яА-Я!_\-.*()']", replace_whitespace_with_hyphen)
     return ''.join(only_acceptable_symbols)
 
 
@@ -165,7 +165,8 @@ if __name__ == '__main__':
     now = datetime.datetime.now()
     unique = '_' + now.strftime("%Y-%m-%d_%H.%M.%S")
     body, extention = os.path.splitext(filename)
-    object_name = folder_name + '/' + filename + unique + extention
+    fn = os.path.basename(body)
+    object_name = folder_name + '/' + fn + unique + extention
 
     upload_file(input_file, bucket, object_name)
 
