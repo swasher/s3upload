@@ -5,6 +5,7 @@ import boto3
 import threading
 import pyperclip
 import winsound
+import subprocess
 import ansicon
 import datetime
 from subprocess import Popen, CREATE_NEW_CONSOLE
@@ -179,4 +180,4 @@ if __name__ == '__main__':
 
     # this will kill the invoked terminal
     pidvalue = prog_start.pid
-    # subprocess.Popen('taskkill /F /T /PID %i' % pidvalue)
+    subprocess.Popen('taskkill /F /T /PID %i' % pidvalue)
