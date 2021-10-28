@@ -27,7 +27,7 @@ class bcolors:
     DIM = '\033[90m'
 
 
-def finish_signal():
+def finish_beep():
     frequency = 500
     duration = 200
     for i in range(2):
@@ -38,7 +38,7 @@ def remove_forbidden_chars(filename):
     """
     TODO Important! Test filenames with dot (.) and double-dot (..)
     Проверка на допустимые символы
-    https: // docs.aws.amazon.com / AmazonS3 / latest / dev / UsingMetadata.html
+    https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
 
     Acceptable:
     0-9 a-z A-Z  ! - _ . * ' ( )
@@ -141,11 +141,12 @@ class ProgressPercentage(object):
 
 
 if __name__ == '__main__':
-    load_dotenv()
+    extDataDir = os.getcwd()
+    load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
     ansicon.load()
 
     prog_start = Popen([sys.executable], shell=True, creationflags=CREATE_NEW_CONSOLE)
-    cmd = 'mode 110,15'
+    cmd = 'mode 120,15'
     os.system(cmd)
 
     # parse args
@@ -167,11 +168,12 @@ if __name__ == '__main__':
     unique = '_' + now.strftime("%Y-%m-%d_%H.%M.%S")
     body, extention = os.path.splitext(filename)
     fn = os.path.basename(body)
+    print('ENV VALUE FOLDER:', folder_name)
     object_name = folder_name + '/' + fn + unique + extention
 
     upload_file(input_file, bucket, object_name)
 
-    finish_signal()
+    finish_beep()
 
     input(bcolors.DIM + 'Enter to exit from this launcher script...' + bcolors.ENDC)
 
@@ -179,5 +181,5 @@ if __name__ == '__main__':
     ansicon.unload()
 
     # this will kill the invoked terminal
-    pidvalue = prog_start.pid
-    subprocess.Popen('taskkill /F /T /PID %i' % pidvalue)
+    # pidvalue = prog_start.pid
+    # subprocess.Popen('taskkill /F /T /PID %i' % pidvalue)

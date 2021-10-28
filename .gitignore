@@ -2,3 +2,6 @@ files
 work
 .env
 .idea
+build/
+__pycache__/
+*.spec
