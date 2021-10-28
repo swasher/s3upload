@@ -21,11 +21,11 @@ INSTALL
 - open `windows explorer` and type `shell:sendto` in path
 - create there a `S3.cmd` file (with appropriate path to exe)
 
-    @echo off
-    cls
-    cd <exe dir>
-    s3up.py %1
-    taskkill /IM s3up.exe -F
+      @echo off
+      cls
+      cd /d <exe dir>
+      s3up.py %1
+      taskkill /IM s3up.exe -F
     
 - now you can right-click on any file, choose `Sent-to` and send it to S3 bucket
 - link to download will be copy to buffer after upload
